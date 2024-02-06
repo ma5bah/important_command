@@ -57,12 +57,11 @@ if [[ $youtube_url == *"list"* ]]; then
 else
     yt-dlp \
         --format bestvideo*+bestaudio/best \
-	--merge-output-format $output_format \
         --output 'individual_downloads/%(title)s-%(id)s.%(ext)s' \
         --embed-thumbnail --embed-metadata --embed-chapters \
+	--merge-output-format $output_format \
         --concurrent-fragments 5 \
         --audio-quality 0 \
         --ffmpeg-location '/usr/bin/ffmpeg' $youtube_url;
 #        --downloader '/usr/bin/aria2c' $1;
 fi
-# list= echo $youtube_url | grep -E "list" ;
