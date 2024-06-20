@@ -1,2 +1,3 @@
-playlists/
-individual_downloads/
+playlists
+individual_downloads
+.DS_Store
