@@ -124,6 +124,9 @@ echo "output_path : $output_path"
 
 
 
+
+
+
 cd $download_path
 yt-dlp \
         --format bestvideo*+bestaudio/best \
@@ -133,4 +136,5 @@ yt-dlp \
         --concurrent-fragments 5 \
         --ffmpeg-location "$(which ffmpeg)" \
         --downloader "$(which aria2c)" \
+        --downloader-args "--max-concurrent-downloads=16 --max-connection-per-server=8 --split=100" \
         --audio-quality 0 $youtube_url
