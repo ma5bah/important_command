@@ -2,5 +2,5 @@ venv
 playlists
 individual_downloads
 .DS_Store
-
+.idea
 youtube_files/test*
