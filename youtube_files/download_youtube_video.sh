@@ -81,11 +81,21 @@ while [[ "$#" -gt 0 ]]; do
                 output_format="$2"
                 shift
                 ;;
+        -id | --is_id_needed)
+                is_id_needed="$2"
+                shift
+                ;;
+        -mw | --max_workers)
+                max_workers="$2"
+                shift
+                ;;
         -h | --help)
                 echo "Example usage :"
                 echo "  -p | --path | --download_path : /path/to/download"
                 echo "  -u | --url | --youtube_url : https://www.youtube.com/watch?v=xxxxxxxxxxx | https://www.youtube.com/playlist?list=xxxxxxxxxxx"
                 echo "  -of | --output_format : avi | flv | mkv | mov | mp4 | webm"
+                echo "  -id | --is_id_needed : 0 | 1 (default 1) Add ID to the file name"
+                echo "  -mw | --max_workers : 1 | 2 | 3 | 4 | 5 (default 5) Number of threads to use"
                 exit 1
                 ;;
         *)
@@ -98,6 +108,8 @@ while [[ "$#" -gt 0 ]]; do
                 echo "  -p | --path | --download_path : /path/to/download"
                 echo "  -u | --url | --youtube_url : https://www.youtube.com/watch?v=xxxxxxxxxxx | https://www.youtube.com/playlist?list=xxxxxxxxxxx"
                 echo "  -of | --output_format : avi | flv | mkv | mov | mp4 | webm"
+                echo "  -id | --is_id_needed : 0 | 1 (default 1) Add ID to the file name"
+                echo "  -mw | --max_workers : 1 | 2 | 3 | 4 | 5 (default 5) Number of threads to use"
                 exit 1
                 ;;
         esac
@@ -126,6 +138,13 @@ if [[ ! -d $download_path ]]; then
                 download_path="."
         fi
 fi
+if [[ ! $is_id_needed ]]; then
+        is_id_needed=1
+fi
+if [[ ! $max_workers ]]; then
+        max_workers=5
+fi
+
 if [[ ! -d $output_format && $output_format != "avi" && $output_format != "flv" && $output_format != "mkv" && $output_format != "mov" && $output_format != "mp4" && $output_format != "webm" ]]; then
         # default output format is mkv
         output_format="mkv"
@@ -137,11 +156,14 @@ fi
 echo "download_path : $download_path"
 echo "youtube_url : $youtube_url"
 echo "output_format : $output_format"
-
+echo "is_id_needed : $is_id_needed"
+echo "max_workers : $max_workers"
 
 
 
 python3 download_youtube.py \
         --download_path $download_path \
         --output_format $output_format \
+        --is_id_needed $is_id_needed \
+        --max_workers $max_workers \
         --youtube_url $youtube_url;
