@@ -2,6 +2,9 @@ pkg update && pkg upgrade;
 
 pkg install git python clang;
 
+# install termux-api
+pkg install which;
+
 # install yt-dlp and ffmpeg
 pip install yt-dlp ffmpeg;
 

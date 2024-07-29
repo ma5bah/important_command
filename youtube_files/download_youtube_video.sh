@@ -8,25 +8,49 @@ elif echo "$(uname -a)" | grep "Linux"; then
         detected_os="linux"
 else
         detected_os="windows"
-        echo " I am Windows, Some functionalities may not work" 
+        echo " I am Windows, Some functionalities may not work"
 fi
 
-# check yt-dlp, if not found install it
-if [[ ! $(which yt-dlp) ]]; then
-        if [[ ! $(which python) || ! $(which pip) ]]; then
-                if [[ $detected_os == "android" ]]; then
-                        pkg install python
-                elif [[ $detected_os == "linux" ]]; then
-                        sudo apt-get install python
-                elif [[ $detected_os == "macos" ]]; then
-                        brew install python
-                else
-                        echo "python or pip not found"
-                        exit 1
-                fi
+if [[ ! $(which python3) || ! $(which pip3) ]]; then
+        if [[ $detected_os == "android" ]]; then
+                pkg install python3
+        elif [[ $detected_os == "linux" ]]; then
+                sudo apt-get install python3
+        elif [[ $detected_os == "macos" ]]; then
+                brew install python3
+        else
+                echo "python3 or pip3 not found"
+                exit 1
         fi
-        pip install yt-dlp;
 fi
+
+# check if virtualenv is installed, if not install it
+if [[ ! $(which virtualenv) ]]; then
+        if [[ $detected_os == "android" ]]; then
+                pkg install virtualenv
+        elif [[ $detected_os == "linux" ]]; then
+                sudo apt-get install virtualenv
+        elif [[ $detected_os == "macos" ]]; then
+                brew install virtualenv
+        else
+                echo "virtualenv not found"
+                exit 1
+        fi
+fi
+
+# check if virtualenv is exist, if not create it
+if [[ ! -d venv ]]; then
+        virtualenv venv
+fi
+
+# activate virtualenv and install yt-dlp
+if [[ $detected_os == "windows" ]]; then
+        source venv/Scripts/activate;
+else
+        source venv/bin/activate;
+fi
+
+pip3 install yt-dlp;
 
 # check ffmpeg and aria2c, if not found install it
 if [[ ! $(which ffmpeg) || ! $(which aria2c) ]]; then
@@ -42,7 +66,7 @@ if [[ ! $(which ffmpeg) || ! $(which aria2c) ]]; then
         fi
 fi
 
-
+# Parsing arguments
 while [[ "$#" -gt 0 ]]; do
         case $1 in
         -p | --path | --download_path)
@@ -107,34 +131,17 @@ if [[ ! -d $output_format && $output_format != "avi" && $output_format != "flv" 
         output_format="mkv"
 fi
 
-if [[ $youtube_url == *"list"* ]]; then
-        # if youtube_url is a playlist
-        output_path="playlists/%(playlist_title)s[_id_]%(playlist_id)s/%(playlist_index)s-%(title)s-%(id)s.%(ext)s"
-else
-        # if youtube_url is a video
-        output_path="individual_downloads/%(title)s-%(id)s.%(ext)s"
-fi
 
 
 # check each variable value
 echo "download_path : $download_path"
 echo "youtube_url : $youtube_url"
 echo "output_format : $output_format"
-echo "output_path : $output_path"
 
 
 
 
-
-
-cd $download_path
-yt-dlp \
-        --format bestvideo*+bestaudio/best \
-        --output $output_path \
-        --embed-thumbnail --embed-metadata --embed-chapters \
-        --merge-output-format $output_format \
-        --concurrent-fragments 5 \
-        --ffmpeg-location "$(which ffmpeg)" \
-        --downloader "$(which aria2c)" \
-        --downloader-args "--max-concurrent-downloads=16 --max-connection-per-server=8 --split=100" \
-        --audio-quality 0 $youtube_url
+python3 download_youtube.py \
+        --download_path $download_path \
+        --output_format $output_format \
+        --youtube_url $youtube_url;

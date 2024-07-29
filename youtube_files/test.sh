@@ -6,4 +6,4 @@ if [[ ! $(command -v ffmpeg) ]]; then
         exit 1;
 fi
 
-echo "ffmpeg_path : $ffmpeg_path";
+echo "ffmpeg_path : $(command -v ffmpeg)";
