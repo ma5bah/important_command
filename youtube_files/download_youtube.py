@@ -67,7 +67,7 @@ def fetch_data(video_entry, output_format, download_path):
                 "embed_chapters": True,
                 "merge_output_format": output_format,
                 "ffmpeg_location": shutil.which("ffmpeg"),
-                "downloader": shutil.which("aria2c"),
+                "external_downloader": shutil.which("aria2c"),
         "external_downloader_args": ["--max-concurrent-downloads=16", "--max-connection-per-server=8", "--split=5"],
         "audio_quality": 0
     }
