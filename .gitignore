@@ -2,3 +2,5 @@ venv
 playlists
 individual_downloads
 .DS_Store
+
+youtube_files/test*

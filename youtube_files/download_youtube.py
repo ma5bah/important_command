@@ -20,12 +20,13 @@ def extract_playlist_info(playlist_url, output_format):
     if "list" in playlist_url:
         playlist_id = playlist_info['id']
         playlist_title = playlist_info['title']
+        playlist_count = str(playlist_info.get('playlist_count'))
         for idx, entry in enumerate(playlist_info.get('entries', [])):
             video_details = {
                 'id': entry.get('id'),
                 'title': entry.get('title'),
                 'url': entry.get('url'),
-                'output_path': f"playlists/{playlist_title}[_id_]{playlist_id}/{idx+1}-{entry.get('title')}[_id_]{entry.get('id')}.{output_format}"
+                'output_path': f"playlists/{playlist_title}[_id_]{playlist_id}/{str(idx+1).zfill(len(playlist_count))}-{entry.get('title')}-{entry.get('id')}.{output_format}"
             }
             video_entries.append(video_details)
     else:
