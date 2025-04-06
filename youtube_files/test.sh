@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# check if ffmpeg and aria2c are installed
-if [[ ! $(command -v ffmpeg) ]]; then
-        echo "ffmpeg not installed";
-        exit 1;
-fi
-
-echo "ffmpeg_path : $(command -v ffmpeg)";
+list_of_files=$(ls -la | awk '{print $9}')
+for file in $list_of_files; do
+        if [[ -f $file ]]; then
+                name_of_file=$file 
+                if [[ $name_of_file == "test.sh" ]]; then
+                        continue
+                fi
+                mv "$name_of_file" "${name_of_file:3:1000}";
+        fi
+done
