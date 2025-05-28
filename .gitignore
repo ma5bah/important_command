@@ -4,3 +4,6 @@ individual_downloads
 .DS_Store
 .idea
 youtube_files/test*
+.venv
+__pycache__
+
