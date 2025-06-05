@@ -41,7 +41,8 @@ def write_combined_file(file_list, output_file, add_line_numbers=False):
         for file in file_list:
             try:
                 with open(file, 'r', encoding='utf-8', errors='ignore') as f:
-                    out.write(f"\n# ===== File Name: {file} =====\n\n")
+                    rel_file = os.path.relpath(file, start=os.getcwd())
+                    out.write(f"\n# ===== File Name: {rel_file} =====\n\n")
                     line_number = 1
                     for line in f:
                         if add_line_numbers:
