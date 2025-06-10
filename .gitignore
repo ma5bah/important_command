@@ -7,3 +7,5 @@ youtube_files/test*
 .venv
 __pycache__
 
+output.txt
+llm_context.txt
