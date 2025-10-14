@@ -43,14 +43,14 @@ Private Key:  ~/.ssh/htb_temp_user
 CONNECTION COMMANDS:
 --------------------
 Root (key auth):
-  ssh root@$IP -p $PORT -i ~/.ssh/htb_temp_user
+  ssh root@$IP -p 22 -i ~/.ssh/htb_temp_user
 
 Temp User (password auth):
-  ssh temp_user@$IP -p $PORT
+  ssh temp_user@$IP -p 22
   Password: temp_user
 
 Temp User (key auth):
-  ssh temp_user@$IP -p $PORT -i ~/.ssh/htb_temp_user
+  ssh temp_user@$IP -p 22 -i ~/.ssh/htb_temp_user
 
 ========================================
 EOF
