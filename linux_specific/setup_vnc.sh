@@ -103,6 +103,12 @@ if [ "$USE_VINO" = true ]; then
     sleep 1
     
     log "Step 4/9: Configuring vino..."
+
+    # Ensure dconf schema is updated
+    if [ -d "/usr/share/glib-2.0/schemas" ]; then
+        log_info "Updating dconf schemas..."
+        sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
+    fi
     
     # Enable screen sharing
     dconf write /org/gnome/desktop/remote-access/enabled true
@@ -131,6 +137,10 @@ if [ "$USE_VINO" = true ]; then
     log_success "Password configured"
     
     log "Step 6/9: Starting vino server..."
+    
+    # Force vino to use a specific resolution by modifying display settings
+    log "Step 6.1: Forcing Vino to use 3024x1964 resolution..."
+    dconf write /org/gnome/desktop/remote-access/screen-size '(uint32 3024, uint32 1964)'
     
     # Start vino
     /usr/lib/vino/vino-server >/dev/null 2>&1 &
@@ -261,16 +271,8 @@ elif [ "$USE_X11VNC" = true ]; then
     fi
     
     # Get the resolution of the physical display
-    log "Step 6.1: Detecting display resolution..."
-    DISPLAY_GEOMETRY=$(xdpyinfo | grep -oP 'dimensions:\s+\K\S+')
-    if [ -z "$DISPLAY_GEOMETRY" ]; then
-        log_warning "Could not detect display resolution. Using default: 1920x1080"
-        GEOMETRY="1920x1080"
-    else
-        log_success "Detected resolution: $DISPLAY_GEOMETRY"
-        GEOMETRY="$DISPLAY_GEOMETRY"
-    fi
     
+    GEOMETRY="3024x1964"  # Example for MacBook Pro 16-inch Retina
     VNC_PORT=5900
     
     # Start x11vnc with proper options
@@ -401,11 +403,13 @@ if [ "$USE_VINO" = true ]; then
     echo "    Start:        /usr/lib/vino/vino-server &"
     echo "    Status:       pgrep -a vino-server"
     echo "    Logs:         journalctl --user -u vino-server"
+    echo "    NOTE: Vino's resolution is fixed at 3024x1964."
 else
     echo "    Stop:         pkill x11vnc"
     echo "    Start:        systemctl --user start x11vnc"
     echo "    Status:       systemctl --user status x11vnc"
     echo "    Logs:         tail -f ~/.vnc/x11vnc.log"
+    echo "    NOTE: x11vnc's resolution is fixed at 3024x1964."
 fi
 echo ""
 echo -e "${CYAN}💡 Important Notes:${NC}"
