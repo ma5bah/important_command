@@ -26,8 +26,8 @@ error_exit() {
 
 echo ""
 echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║   Complete Screen Sharing Setup       ║${NC}"
-echo -e "${CYAN}║   Auto-detects and configures VNC      ║${NC}"
+echo -e "${CYAN}║    Complete Screen Sharing Setup       ║${NC}"
+echo -e "${CYAN}║    Auto-detects and configures VNC     ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -40,7 +40,7 @@ fi
 SESSION_TYPE="${XDG_SESSION_TYPE:-unknown}"
 DESKTOP="${XDG_CURRENT_DESKTOP:-unknown}"
 
-log "Step 1/8: Detecting system..."
+log "Step 1/9: Detecting system..."
 echo "  Session Type: $SESSION_TYPE"
 echo "  Desktop: $DESKTOP"
 echo "  Display: ${DISPLAY:-not set}"
@@ -88,7 +88,7 @@ fi
 # VINO SETUP (GNOME)
 # ======================
 if [ "$USE_VINO" = true ]; then
-    log "Step 2/8: Installing vino..."
+    log "Step 2/9: Installing vino..."
     
     if ! command -v vino-server >/dev/null 2>&1; then
         sudo apt update -y
@@ -98,11 +98,11 @@ if [ "$USE_VINO" = true ]; then
         log_success "vino already installed"
     fi
     
-    log "Step 3/8: Stopping existing screen sharing..."
+    log "Step 3/9: Stopping existing screen sharing..."
     pkill -9 vino-server 2>/dev/null || true
     sleep 1
     
-    log "Step 4/8: Configuring vino..."
+    log "Step 4/9: Configuring vino..."
     
     # Enable screen sharing
     dconf write /org/gnome/desktop/remote-access/enabled true
@@ -112,7 +112,7 @@ if [ "$USE_VINO" = true ]; then
     
     log_success "Basic configuration done"
     
-    log "Step 5/8: Setting password..."
+    log "Step 5/9: Setting password..."
     echo ""
     read -sp "Enter VNC password: " VNC_PASSWORD
     echo ""
@@ -130,13 +130,13 @@ if [ "$USE_VINO" = true ]; then
     
     log_success "Password configured"
     
-    log "Step 6/8: Starting vino server..."
+    log "Step 6/9: Starting vino server..."
     
     # Start vino
     /usr/lib/vino/vino-server >/dev/null 2>&1 &
     sleep 3
     
-    log "Step 7/8: Verifying vino is running..."
+    log "Step 7/9: Verifying vino is running..."
     if pgrep -u "$USER" vino-server >/dev/null 2>&1; then
         log_success "vino-server is running!"
     else
@@ -153,8 +153,25 @@ if [ "$USE_VINO" = true ]; then
             error_exit "Cannot start vino-server. Check: journalctl -xe"
         fi
     fi
+
+    log "Step 8/9: Configuring UFW firewall..."
+    VNC_PORT=5900
+    if command -v ufw >/dev/null 2>&1; then
+        if sudo ufw status | grep -q 'Status: active'; then
+            if ! sudo ufw status | grep -q "ALLOW IN.*$VNC_PORT"; then
+                sudo ufw allow $VNC_PORT/tcp
+                log_success "UFW rule added for port $VNC_PORT"
+            else
+                log_success "UFW rule for port $VNC_PORT already exists"
+            fi
+        else
+            log_info "UFW is not active, skipping firewall configuration."
+        fi
+    else
+        log_warning "UFW is not installed, skipping firewall configuration."
+    fi
     
-    log "Step 8/8: Creating autostart entry..."
+    log "Step 9/9: Creating autostart entry..."
     mkdir -p ~/.config/autostart
     cat > ~/.config/autostart/vino-server.desktop << 'EOF'
 [Desktop Entry]
@@ -174,7 +191,7 @@ EOF
 # X11VNC SETUP
 # ======================
 elif [ "$USE_X11VNC" = true ]; then
-    log "Step 2/8: Installing x11vnc..."
+    log "Step 2/9: Installing x11vnc..."
     
     if ! command -v x11vnc >/dev/null 2>&1; then
         sudo apt update -y
@@ -184,11 +201,11 @@ elif [ "$USE_X11VNC" = true ]; then
         log_success "x11vnc already installed"
     fi
     
-    log "Step 3/8: Stopping existing x11vnc sessions..."
+    log "Step 3/9: Stopping existing x11vnc sessions..."
     pkill -9 x11vnc 2>/dev/null || true
     sleep 1
     
-    log "Step 4/8: Setting up password..."
+    log "Step 4/9: Setting up password..."
     VNC_DIR="$HOME/.vnc"
     mkdir -p "$VNC_DIR"
     
@@ -205,7 +222,7 @@ elif [ "$USE_X11VNC" = true ]; then
         fi
     fi
     
-    log "Step 5/8: Finding X authority file..."
+    log "Step 5/9: Finding X authority file..."
     
     # Try multiple methods to find auth file
     XAUTH=""
@@ -236,12 +253,25 @@ elif [ "$USE_X11VNC" = true ]; then
         XAUTH="guess"
     fi
     
-    log "Step 6/8: Starting x11vnc..."
+    log "Step 6/9: Starting x11vnc..."
     
     # Ensure DISPLAY is set
     if [ -z "${DISPLAY:-}" ]; then
         export DISPLAY=:0
     fi
+    
+    # Get the resolution of the physical display
+    log "Step 6.1: Detecting display resolution..."
+    DISPLAY_GEOMETRY=$(xdpyinfo | grep -oP 'dimensions:\s+\K\S+')
+    if [ -z "$DISPLAY_GEOMETRY" ]; then
+        log_warning "Could not detect display resolution. Using default: 1920x1080"
+        GEOMETRY="1920x1080"
+    else
+        log_success "Detected resolution: $DISPLAY_GEOMETRY"
+        GEOMETRY="$DISPLAY_GEOMETRY"
+    fi
+    
+    VNC_PORT=5900
     
     # Start x11vnc with proper options
     if [ "$XAUTH" = "guess" ]; then
@@ -250,8 +280,10 @@ elif [ "$USE_X11VNC" = true ]; then
             -auth guess \
             -forever \
             -rfbauth "$VNC_DIR/x11vnc_passwd" \
-            -rfbport 5900 \
+            -rfbport $VNC_PORT \
             -shared \
+            -clip $GEOMETRY \
+            -encodings "tight" \
             -noxdamage \
             -repeat \
             -nowf \
@@ -263,8 +295,10 @@ elif [ "$USE_X11VNC" = true ]; then
             -auth "$XAUTH" \
             -forever \
             -rfbauth "$VNC_DIR/x11vnc_passwd" \
-            -rfbport 5900 \
+            -rfbport $VNC_PORT \
             -shared \
+            -clip $GEOMETRY \
+            -encodings "tight" \
             -noxdamage \
             -repeat \
             -nowf \
@@ -275,7 +309,7 @@ elif [ "$USE_X11VNC" = true ]; then
     X11VNC_PID=$!
     sleep 3
     
-    log "Step 7/8: Verifying x11vnc is running..."
+    log "Step 7/9: Verifying x11vnc is running..."
     if pgrep -u "$USER" x11vnc >/dev/null 2>&1; then
         log_success "x11vnc is running!"
     else
@@ -289,7 +323,23 @@ elif [ "$USE_X11VNC" = true ]; then
         error_exit "x11vnc startup failed"
     fi
     
-    log "Step 8/8: Creating systemd user service..."
+    log "Step 8/9: Configuring UFW firewall..."
+    if command -v ufw >/dev/null 2>&1; then
+        if sudo ufw status | grep -q 'Status: active'; then
+            if ! sudo ufw status | grep -q "ALLOW IN.*$VNC_PORT"; then
+                sudo ufw allow $VNC_PORT/tcp
+                log_success "UFW rule added for port $VNC_PORT"
+            else
+                log_success "UFW rule for port $VNC_PORT already exists"
+            fi
+        else
+            log_info "UFW is not active, skipping firewall configuration."
+        fi
+    else
+        log_warning "UFW is not installed, skipping firewall configuration."
+    fi
+
+    log "Step 9/9: Creating systemd user service..."
     
     mkdir -p ~/.config/systemd/user
     cat > ~/.config/systemd/user/x11vnc.service << EOF
@@ -301,7 +351,7 @@ After=graphical.target
 Type=simple
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=$XAUTH
-ExecStart=/usr/bin/x11vnc -display :0 -auth $XAUTH -forever -rfbauth $VNC_DIR/x11vnc_passwd -rfbport 5900 -shared -noxdamage -repeat -nowf -nopw
+ExecStart=/usr/bin/x11vnc -display :0 -auth $XAUTH -forever -rfbauth $VNC_DIR/x11vnc_passwd -rfbport $VNC_PORT -shared -encodings "tight" -noxdamage -repeat -nowf -nopw -clip $GEOMETRY
 Restart=on-failure
 RestartSec=5
 
@@ -326,49 +376,48 @@ echo -e "${GREEN}║  ✅ SCREEN SHARING IS ACTIVE!          ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}📺 Configuration:${NC}"
-echo "   Method:      $VNC_METHOD"
-echo "   Display:     ${DISPLAY:-:0}"
-echo "   Port:        $VNC_PORT"
+echo "    Method:       $VNC_METHOD"
+echo "    Display:      ${DISPLAY:-:0}"
+echo "    Port:         $VNC_PORT"
 echo ""
 echo -e "${CYAN}🔌 Connection Details:${NC}"
-echo "   IP Address:  $IP"
-echo "   Port:        $VNC_PORT"
+echo "    IP Address:   $IP"
+echo "    Port:         $VNC_PORT"
 echo ""
 echo -e "${CYAN}📱 Connect from VNC Client:${NC}"
-echo "   ${IP}:${VNC_PORT}"
-echo "   or simply: ${IP}"
+echo "    ${IP}:${VNC_PORT}"
+echo "    or simply: ${IP}"
 echo ""
 echo -e "${CYAN}🔍 Current Status:${NC}"
 if [ "$USE_VINO" = true ]; then
-    pgrep -a vino-server || echo "   Warning: vino-server not detected"
+    pgrep -a vino-server || echo "    Warning: vino-server not detected"
 else
-    pgrep -a x11vnc || echo "   Warning: x11vnc not detected"
+    pgrep -a x11vnc || echo "    Warning: x11vnc not detected"
 fi
 echo ""
 echo -e "${CYAN}🛠️  Management Commands:${NC}"
 if [ "$USE_VINO" = true ]; then
-    echo "   Stop:        pkill vino-server"
-    echo "   Start:       /usr/lib/vino/vino-server &"
-    echo "   Status:      pgrep -a vino-server"
-    echo "   Logs:        journalctl --user -u vino-server"
+    echo "    Stop:         pkill vino-server"
+    echo "    Start:        /usr/lib/vino/vino-server &"
+    echo "    Status:       pgrep -a vino-server"
+    echo "    Logs:         journalctl --user -u vino-server"
 else
-    echo "   Stop:        pkill x11vnc"
-    echo "   Start:       systemctl --user start x11vnc"
-    echo "   Status:      systemctl --user status x11vnc"
-    echo "   Logs:        tail -f ~/.vnc/x11vnc.log"
+    echo "    Stop:         pkill x11vnc"
+    echo "    Start:        systemctl --user start x11vnc"
+    echo "    Status:       systemctl --user status x11vnc"
+    echo "    Logs:         tail -f ~/.vnc/x11vnc.log"
 fi
 echo ""
 echo -e "${CYAN}💡 Important Notes:${NC}"
-echo "   • You'll see your ACTUAL laptop screen"
-echo "   • Changes are reflected on both screens"
-echo "   • Server auto-starts on boot"
-echo "   • Multiple clients can connect"
+echo "    • You'll see your ACTUAL laptop screen"
+echo "    • Changes are reflected on both screens"
+echo "    • Server auto-starts on boot"
+echo "    • Multiple clients can connect"
 echo ""
 echo -e "${CYAN}🔒 Security:${NC}"
-echo "   • Password protected"
-echo "   • Accessible from LAN: $IP"
-echo "   • For SSH tunnel: ssh -L 5900:localhost:5900 user@$IP"
+echo "    • Password protected"
+echo "    • Accessible from LAN: $IP"
+echo "    • For SSH tunnel: ssh -L 5900:localhost:5900 user@$IP"
 echo ""
-
 log_success "Setup complete! Connect now from your VNC client."
 echo ""
