@@ -175,7 +175,6 @@ EXCLUDE_FILES = {
     "CONTRIBUTORS*",
     "*.md",
     "*.rst",
-    "*.txt",
     # ── Build artifacts ───────────────────────────────────────────────────────
     "*.min.js",
     "*.min.css",
@@ -1089,7 +1088,7 @@ def write_enhanced_output(
 ) -> Dict:
     """Write enhanced output with metadata and smart formatting."""
     
-    header = generate_enhanced_header(file_data, header_fmt, analyzer)
+    header = generate_enhanced_header(file_data, header_fmt)
     total_files = len(file_data)
     total_lines_written = 0
     total_truncated = 0
@@ -1338,4 +1337,6 @@ Examples:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
+    # exit gracefully
+    sys.exit(0)
