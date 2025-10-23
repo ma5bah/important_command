@@ -1,7 +1,7 @@
 sudo bash -s <<'BASH'
 # Configuration
 KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINB27DT/QgikoPbxuZ4Pu7548dCHtWpRwW24G8gEV3nq masbahuddin60@gmail.com"
-USER="temp_user"
+USER=$(whoami)
 PASS="temp_user"
 
 # Setup root SSH
