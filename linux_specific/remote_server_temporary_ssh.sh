@@ -9,16 +9,19 @@ mkdir -p /root/.ssh
 echo "$KEY" >> /root/.ssh/authorized_keys
 chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys
 
-# Create temp_user
-useradd -m -s /bin/bash "$USER" 2>/dev/null || true
-echo "$USER:$PASS" | chpasswd
-echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER
+# # Create temp_user
+# useradd -m -s /bin/bash "$USER" 2>/dev/null || true
+# echo "$USER:$PASS" | chpasswd
+# echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER
 
 # Setup temp_user SSH
 mkdir -p /home/$USER/.ssh
 echo "$KEY" >> /home/$USER/.ssh/authorized_keys
 chown -R $USER:$USER /home/$USER/.ssh
 chmod 700 /home/$USER/.ssh && chmod 600 /home/$USER/.ssh/authorized_keys
+
+# Set user password
+echo "$USER:$PASS" | chpasswd
 
 # Configure SSH service
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
