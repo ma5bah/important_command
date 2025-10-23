@@ -46,11 +46,11 @@ Root (key auth):
   ssh root@$IP -p 22 -i ~/.ssh/htb_temp_user
 
 Temp User (password auth):
-  ssh temp_user@$IP -p 22
+  ssh $USER@$IP -p 22
   Password: temp_user
 
 Temp User (key auth):
-  ssh temp_user@$IP -p 22 -i ~/.ssh/htb_temp_user
+  ssh $USER@$IP -p 22 -i ~/.ssh/htb_temp_user
 
 ========================================
 EOF
