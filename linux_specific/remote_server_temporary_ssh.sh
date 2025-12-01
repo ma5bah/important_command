@@ -30,7 +30,8 @@ sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_con
 systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null
 
 # Get connection info
-IP=$(curl -s https://ifconfig.co || hostname -I | awk '{print $1}')
+# IP=$(curl -s https://ifconfig.co || hostname -I | awk '{print $1}')
+IP=$(curl -s http://169.254.169.254/metadata/v1/network/interfaces/1/ip_addresses/1/address)
 PORT=$(grep "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo 22)
 
 # Output
