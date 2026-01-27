@@ -9,3 +9,4 @@ __pycache__
 
 output.txt
 llm_context.txt
+test.*.*
