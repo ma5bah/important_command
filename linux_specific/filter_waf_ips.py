@@ -1,8 +1,47 @@
 import ipaddress
+import argparse
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Filter out IPs belonging to known WAF ranges (Cloudflare, Google CDN, Fastly)"
+    )
+    parser.add_argument(
+        "-i", "--input",
+        default="urls.final.txt",
+        help="Input file containing IP addresses (default: urls.final.txt)"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        default="ips_to_scan.txt",
+        help="Output file for filtered IPs (default: ips_to_scan.txt)"
+    )
+    args = parser.parse_args()
+
+    with open(args.input) as f, open(args.output, "w") as out:
+        for line in f:
+            ip_str = line.strip()
+            if not ip_str:
+                continue
+            try:
+                real_ip = ip_str.split(":")[0]
+                ip = ipaddress.ip_address(real_ip)
+                if not any(ip in net for net in waf_networks):
+                    out.write(ip_str + "\n")
+            except ValueError:
+                pass
+
 
 # WAF ranges
 waf_ranges = {
+    "private_ranges": [
+        "10.0.0.0/8",
+        "192.168.0.0/16",
+        "172.16.0.0/12",
+    ],
     "cloudflare": [
+        "1.1.1.1",
+        "1.0.0.0",
         "173.245.48.0/20",
         "103.21.244.0/22",
         "103.22.200.0/22",
@@ -875,14 +914,7 @@ for ranges in waf_ranges.values():
 
 waf_networks = [ipaddress.ip_network(r) for r in all_waf_ranges]
 
-with open("unique_ips.txt") as f, open("ips_to_scan.txt", "w") as out:
-    for line in f:
-        ip_str = line.strip()
-        if not ip_str:
-            continue
-        try:
-            ip = ipaddress.ip_address(ip_str)
-            if not any(ip in net for net in waf_networks):
-                out.write(ip_str + "\n")
-        except ValueError:
-            pass
+
+
+if __name__ == "__main__":
+    main()
