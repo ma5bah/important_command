@@ -39,6 +39,16 @@ waf_ranges = {
         "192.168.0.0/16",
         "172.16.0.0/12",
     ],
+    # https://techdocs.akamai.com/origin-ip-acl/docs/update-your-origin-server
+    "akamai": [
+        "2.16.0.0/13",
+        "23.0.0.0/12",
+        "23.192.0.0/11",
+        "23.32.0.0/11",
+        "95.100.0.0/15",
+        "184.24.0.0/13"
+    ],
+    # https://www.cloudflare.com/ips-v4/
     "cloudflare": [
         "1.1.1.1",
         "1.0.0.0",
@@ -58,6 +68,7 @@ waf_ranges = {
         "172.64.0.0/13",
         "131.0.72.0/22",
     ],
+    
     "google_cdn": [
         "34.1.208.0/20",
         "34.35.0.0/16",
