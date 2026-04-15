@@ -16,6 +16,7 @@ Usage:
     python merge_for_llm.py -f src tests --priority-files main.py app.py
     python merge_for_llm.py -f . --ignore-dirs build dist --ignore-ext .pdf .log
     python merge_for_llm.py -f src/ --ignore-files README.md --max-size 500000
+    python merge_for_llm.py -f . --files-only
 """
 
 import os
@@ -23,10 +24,8 @@ import argparse
 import pathlib
 import re
 from datetime import datetime, timezone
-from collections import Counter
 from typing import List, Dict, Tuple, Optional, Set
 import fnmatch
-import json
 import sys
 
 
@@ -93,36 +92,21 @@ EXCLUDE_DIRS = {
 
 # Fine-grained glob patterns (directory-level or deep wildcard)
 EXCLUDE_GLOBS = {
-    # UI component libraries
     "components/ui/**",
     "**/components/ui/**",
-    # Build / dist / caches
-    "dist/**",
-    "build/**",
     ".next/**",
     ".nuxt/**",
     ".turbo/**",
     ".parcel-cache/**",
-    "node_modules/**",
     "vendor/**",
     ".aws-sam/**",
     ".serverless/**",
-    "__pycache__/**",
-    ".pytest_cache/**",
-    ".mypy_cache/**",
-    ".tox/**",
     ".cache/**",
-    "htmlcov/**",
     ".nyc_output/**",
     ".jest/**",
-    # Version control internals
-    ".git/**",
     ".hg/**",
     ".svn/**",
     ".bzr/**",
-    # IDE specific
-    ".idea/**",
-    ".vscode/**",
     ".vs/**",
 }
 
@@ -173,8 +157,6 @@ EXCLUDE_FILES = {
     "CODEOWNERS",
     "AUTHORS*",
     "CONTRIBUTORS*",
-    "*.md",
-    "*.rst",
     # ── Build artifacts ───────────────────────────────────────────────────────
     "*.min.js",
     "*.min.css",
@@ -406,10 +388,10 @@ def parse_ignore_file(ignore_file_path: str) -> Tuple[Set[str], Set[str]]:
         original_pattern = line
         clean_pattern = line.rstrip("/")
 
-        # Determine if it's a directory pattern
+        has_wildcard = "*" in clean_pattern or "?" in clean_pattern
         is_directory_pattern = (
             original_pattern.endswith("/")
-            or "/" not in clean_pattern
+            or (not has_wildcard and "/" not in clean_pattern and "." not in clean_pattern)
             or clean_pattern in ["node_modules", "dist", "build", "__pycache__", ".git", "venv", ".venv"]
         )
 
@@ -581,8 +563,10 @@ class FileAnalyzer:
                     return True
                 # Check if it's mostly non-text characters
                 text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)))
-                non_text = len([b for b in chunk if b not in text_chars])
-                return non_text / len(chunk) > 0.30  # More than 30% non-text
+                if not chunk:
+                    return False
+                non_text = sum(1 for b in chunk if b not in text_chars)
+                return non_text / len(chunk) > 0.30
         except Exception:
             return False
 
@@ -671,7 +655,7 @@ def smart_file_ordering(file_data: List[Tuple[str, Dict]]) -> List[Tuple[str, Di
 # OUTPUT GENERATION
 # ============================================================================
 
-def generate_enhanced_header(file_data: List[Tuple[str, Dict]], header_fmt: str) -> str:
+def generate_enhanced_header(file_data: List[Tuple[str, Dict]]) -> str:
     """Generate enhanced header with project analysis and clear LLM instructions."""
 
     total_files = len(file_data)
@@ -826,8 +810,12 @@ def gather_files_enhanced(
     ignore_dirs: Optional[List[str]] = None,
     ignore_ext: Optional[List[str]] = None,
 ) -> List[str]:
-    """Enhanced file gathering with comprehensive ignore support."""
-    
+    """Gather paths with ignore-file support.
+
+    Parsed patterns from ``.gitignore`` (and similar) are applied as-is; if they
+    exclude ``*.md`` / ``*.rst``, those files stay excluded (no override).
+    """
+
     # Get additional exclusions from ignore files
     additional_exclude_dirs = set()
     additional_exclude_files = set()
@@ -867,9 +855,8 @@ def gather_files_enhanced(
         fname = p.name
         ext = p.suffix.lower()
         
-        # Check binary extensions
         if ext in combined_binary_extensions:
-            return extensions is not None and ext not in extensions
+            return True
         
         # Check patterns
         for pattern in combined_exclude_files:
@@ -1081,32 +1068,30 @@ def write_table_of_contents(file_data: List[Tuple[str, Dict]], out_file) -> int:
 def write_enhanced_output(
     file_data: List[Tuple[str, Dict]],
     output_path: str,
-    header_fmt: str,
     max_lines_per_file: int = 1000,
     include_toc: bool = True,
     analyzer: Optional[FileAnalyzer] = None,
+    files_only: bool = False,
 ) -> Dict:
     """Write enhanced output with metadata and smart formatting."""
     
-    header = generate_enhanced_header(file_data, header_fmt)
     total_files = len(file_data)
     total_lines_written = 0
     total_truncated = 0
     
     with open(output_path, "w", encoding="utf-8") as out:
-        # Write header
-        out.write(header + "\n\n")
-        total_lines_written += header.count("\n") + 2
-        
-        # Write table of contents (optional)
-        if include_toc and len(file_data) > 0:
-            toc_lines = write_table_of_contents(file_data, out)
-            total_lines_written += toc_lines
-        elif not include_toc:
-            out.write("# Table of Contents omitted to save context space\n\n")
-            total_lines_written += 2
-        
-        # Write file contents
+        if not files_only:
+            header = generate_enhanced_header(file_data)
+            out.write(header + "\n\n")
+            total_lines_written += header.count("\n") + 2
+
+            if include_toc and len(file_data) > 0:
+                toc_lines = write_table_of_contents(file_data, out)
+                total_lines_written += toc_lines
+            elif not include_toc:
+                out.write("# Table of Contents omitted to save context space\n\n")
+                total_lines_written += 2
+
         for filepath, metadata in file_data:
             file_lines, was_truncated = write_file_content(
                 filepath, metadata, out, max_lines_per_file
@@ -1114,11 +1099,11 @@ def write_enhanced_output(
             total_lines_written += file_lines
             if was_truncated:
                 total_truncated += 1
-        
-        # Enhanced end marker
-        out.write("<<< END OF MERGED CONTEXT >>>\n")
-        out.write(f"# Summary: {total_files} files processed, {total_truncated} truncated\n")
-        total_lines_written += 2
+
+        if not files_only:
+            out.write("<<< END OF MERGED CONTEXT >>>\n")
+            out.write(f"# Summary: {total_files} files processed, {total_truncated} truncated\n")
+            total_lines_written += 2
     
     return {
         "files_processed": total_files,
@@ -1152,6 +1137,9 @@ Examples:
   
   # Skip ignore files and table of contents
   python merge_for_llm.py -f . --no-ignore --no-toc
+
+  # Merged file blocks only (no LLM prompt, TOC, or footer)
+  python merge_for_llm.py -f src/ --files-only
   
   # Comprehensive example
   python merge_for_llm.py -f src/ tests/ \\
@@ -1224,6 +1212,11 @@ Examples:
         help="Skip table of contents to save space"
     )
     parser.add_argument(
+        "--files-only",
+        action="store_true",
+        help="Output only merged file blocks (no LLM instructions, TOC, or footer)",
+    )
+    parser.add_argument(
         "--no-ignore",
         action="store_true",
         help="Skip parsing ignore files (.gitignore, .dockerignore, etc.)"
@@ -1283,10 +1276,6 @@ Examples:
         if i % 100 == 0:
             print(f"  Analyzing file {i}/{len(files)}...")
         metadata = analyzer.analyze_file(filepath)
-        metadata["file_type"] = FILE_TYPES.get(
-            pathlib.Path(filepath).suffix.lower(),
-            "text"
-        )
         file_data.append((filepath, metadata))
     
     # Sort files based on option
@@ -1305,10 +1294,10 @@ Examples:
     stats = write_enhanced_output(
         file_data,
         OUTPUT_FILE,
-        "enhanced",
         args.max_lines,
         not args.no_toc,
         analyzer,
+        files_only=args.files_only,
     )
     
     # Get summary stats
@@ -1337,6 +1326,4 @@ Examples:
 
 
 if __name__ == "__main__":
-    main()
-    # exit gracefully
-    sys.exit(0)
+    sys.exit(main())
