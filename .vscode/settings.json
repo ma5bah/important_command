@@ -196,6 +196,6 @@
         "Invoke-Expression": false,
         "iex": false
     },
-    "chat.agent.sandbox": true
+    "chat.agent.sandbox.enabled": "on"
 
 }

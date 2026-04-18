@@ -50,6 +50,13 @@ waf_ranges = {
         "95.100.0.0/15",
         "184.24.0.0/13"
     ],
+    # https://www.iplocate.io/data/hosting-providers/imperva
+    "imperva": [
+        "45.60.0.0/16",
+        "45.223.0.0/16",
+        "131.125.128.0/17",
+        "192.230.64.0/18",
+    ]
 }
 
 try:
