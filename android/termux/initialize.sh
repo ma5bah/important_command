@@ -1,21 +1,19 @@
-pkg update && pkg upgrade;
+pkg update && pkg upgrade -y;
 
-pkg install git python clang;
-
-# install termux-api
-pkg install which;
-
-# install yt-dlp and ffmpeg
-pip install yt-dlp ffmpeg;
+# Termux host packages: keep these limited to Android/Termux integration.
+pkg install -y proot-distro termux-api which git python clang;
 
 # initialize keyboard
 echo "enforce-char-based-input = true" >> ~/.termux/termux.properties;
 
 termux-setup-storage
 
-# install go
-pkg install golang;
-
-# install tools
-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-
+# install proot-distro and debian
+proot-distro install debian;
+proot-distro login debian -- bash -lc '
+  apt update &&
+  apt upgrade -y &&
+  apt install -y git python3 python3-pip python3-venv clang golang ffmpeg &&
+  python3 -m pip install --user yt-dlp &&
+  go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+';
