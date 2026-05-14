@@ -1,68 +1,95 @@
-#!/usr/bin/env zsh
-# -------------------------------------------------------------------
-# Linux ZSH Key Bindings
-# Source this file from ~/.zshrc:  source /path/to/fix_terminal.sh
-# -------------------------------------------------------------------
+#!/bin/sh
 
-# Guard against double-sourcing
-[[ -n "$_FIX_TERMINAL_LOADED" ]] && return
+[ -n "$_FIX_TERMINAL_LOADED" ] && return 0 2>/dev/null
 _FIX_TERMINAL_LOADED=1
 
-# Ensure we are using emacs mode (standard for word jumping)
-bindkey -e
+command -v infocmp >/dev/null 2>&1 && ! infocmp "$TERM" >/dev/null 2>&1 && export TERM=xterm-256color
+stty erase '^?' 2>/dev/null
 
-# Use bash-like word boundaries (stop at /, ., - etc.)
-WORDCHARS='*?[]~=&;!#$%^(){}<>'
-
-# --- Word Jumping (Alt + Arrows) ---
-# ESC + CSI arrow — some terminals send this for Alt+Arrow
-bindkey "^[^[[D" backward-word
-bindkey "^[^[[C" forward-word
-# Alt+Left/Right — xterm modifier format (xterm/GNOME/Konsole)
-bindkey "^[[1;3D" backward-word
-bindkey "^[[1;3C" forward-word
-# Ctrl+Left/Right — xterm, GNOME Terminal, Konsole
-bindkey "^[[1;5D" backward-word
-bindkey "^[[1;5C" forward-word
-# rxvt legacy
-bindkey "^[[5D" backward-word
-bindkey "^[[5C" forward-word
-# Standard emacs Alt+B / Alt+F (already active via -e, explicit for clarity)
-bindkey "^[b" backward-word
-bindkey "^[f" forward-word
-
-# --- Word Deletion ---
-# Alt+Backspace — delete word backward
-bindkey "^[^?" backward-kill-word
-# Ctrl+W — standard unix word-kill
-bindkey "^W" backward-kill-word
-# Ctrl+Delete — delete word forward
-bindkey "^[[3;5~" kill-word
-# Alt+D — standard emacs forward word-kill
-bindkey "^[d" kill-word
-
-# --- Line Navigation (Home/End) ---
-# CSI sequences (normal mode)
-bindkey "^[[H" beginning-of-line
-bindkey "^[[F" end-of-line
-# VT220 / older terminals
-bindkey "^[[1~" beginning-of-line
-bindkey "^[[4~" end-of-line
-# Application mode (GNOME Terminal, Konsole)
-bindkey "^[OH" beginning-of-line
-bindkey "^[OF" end-of-line
-
-# --- Intelligent History Search ---
-# Type a few letters and press Up/Down to cycle through matching history
-if autoload -Uz up-line-or-beginning-search down-line-or-beginning-search 2>/dev/null; then
-    zle -N up-line-or-beginning-search
-    zle -N down-line-or-beginning-search
-    bindkey "^[[A" up-line-or-beginning-search
-    bindkey "^[[B" down-line-or-beginning-search
+# Zsh-only init (must run before unified bindings)
+if [ -n "$ZSH_VERSION" ]; then
+  bindkey -e
+  WORDCHARS='*?[]~=&;!#$%^(){}<>'
+  KEYTIMEOUT=10
+  autoload -Uz up-line-or-beginning-search down-line-or-beginning-search 2>/dev/null
+  zle -N up-line-or-beginning-search 2>/dev/null
+  zle -N down-line-or-beginning-search 2>/dev/null
+  _ft_smkx() { echoti smkx 2>/dev/null; }
+  _ft_rmkx() { echoti rmkx 2>/dev/null; }
+  if autoload -Uz add-zle-hook-widget 2>/dev/null; then
+    add-zle-hook-widget line-init _ft_smkx; add-zle-hook-widget line-finish _ft_rmkx
+  else
+    zle -N zle-line-init _ft_smkx; zle -N zle-line-finish _ft_rmkx
+  fi
+  autoload -Uz bracketed-paste-magic 2>/dev/null && zle -N bracketed-paste bracketed-paste-magic
 fi
 
-# --- Handy Shortcuts ---
-bindkey '^U' backward-kill-line
-bindkey '^K' kill-line
-# Reverse menu completion (Shift+Tab)
-bindkey '^[[Z' reverse-menu-complete
+# Unified bind: _bind <seq> <action> [bash_override]
+# Translates zsh ^[ notation to bash \e notation automatically.
+_bind() {
+  _s="$1" _za="$2" _ba="${3:-$2}"
+  if [ -n "$ZSH_VERSION" ]; then
+    bindkey "$_s" "$_za" 2>/dev/null
+  elif [ -n "$BASH_VERSION" ]; then
+    _bs=$(printf '%s' "$_s" | sed 's/\^\[/\\e/g;s/\^\?/\\C-?/g;s/\^W/\\C-w/;s/\^U/\\C-u/;s/\^K/\\C-k/;s/\^L/\\C-l/')
+    bind "\"$_bs\": $_ba" 2>/dev/null
+  fi
+}
+
+# Word jumping
+_bind "^[^[[D" backward-word;    _bind "^[^[[C" forward-word      # double-ESC arrow
+_bind "^[[1;3D" backward-word;   _bind "^[[1;3C" forward-word
+_bind "^[[1;5D" backward-word;   _bind "^[[1;5C" forward-word
+_bind "^[[5D" backward-word;     _bind "^[[5C" forward-word        # rxvt
+_bind "^[Od" backward-word;      _bind "^[Oc" forward-word         # rxvt ctrl+arrow
+_bind "^[b" backward-word;       _bind "^[f" forward-word
+
+# Word deletion
+_bind "^[^?" backward-kill-word
+_bind "^W" backward-kill-word
+_bind "^[[3;5~" kill-word;       _bind "^[[3;3~" kill-word
+_bind "^[d" kill-word
+
+# Home / End
+_bind "^[[H" beginning-of-line;  _bind "^[[F" end-of-line
+_bind "^[OH" beginning-of-line;  _bind "^[OF" end-of-line          # SS3 / app mode
+_bind "^[[1~" beginning-of-line; _bind "^[[4~" end-of-line         # VT220
+_bind "^[[7~" beginning-of-line; _bind "^[[8~" end-of-line         # rxvt
+
+# Delete key
+_bind "^[[3~" delete-char
+
+# History search (zsh: prefix-aware, bash: basic search)
+_bind "^[[A" up-line-or-beginning-search history-search-backward
+_bind "^[[B" down-line-or-beginning-search history-search-forward
+_bind "^[OA" up-line-or-beginning-search history-search-backward   # app mode
+_bind "^[OB" down-line-or-beginning-search history-search-forward
+
+# Shortcuts
+_bind "^U" backward-kill-line
+_bind "^K" kill-line
+_bind "^L" clear-screen
+_bind "^[[Z" reverse-menu-complete                                 # shift+tab
+
+unset -f _bind 2>/dev/null
+
+# Handles: app/normal mode, tmux/screen, SSH TERM mismatch, ^H/^? backspace,
+# smkx/rmkx hooks, WORDCHARS, KEYTIMEOUT, delete key, paste bracket mode,
+# double-ESC seqs, rxvt legacy. macOS needs "Use Option as Meta" in terminal.
+
+
+
+
+# Edge cases handled:
+#  1. App vs Normal mode — CSI + SS3 bound     
+#  2. tmux/screen — rxvt/VT220 variants        
+#  3. SSH TERM mismatch — auto-fallback         
+#  4. Backspace ^H/^? — stty erase fix         
+#  5. macOS Option — needs "Meta" in term app   
+#  6. Vi mode / framework overrides            
+# 7. WORDCHARS clobbering (zsh)
+# 8. ZLE smkx/rmkx hooks (zsh)
+# 9. Delete key variants
+# 10. Double-escape arrow seqs
+# 11. Escape delay (KEYTIMEOUT)
+# 12. Paste bracket mode (zsh)
