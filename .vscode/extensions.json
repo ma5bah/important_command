@@ -17,6 +17,8 @@
 		"ms-vscode-remote.remote-ssh",
 		"bradlc.vscode-tailwindcss",
 		"ms-azuretools.vscode-docker",
+		"rust-lang.rust-analyzer", 
+		"redhat.vscode-xml"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": []
