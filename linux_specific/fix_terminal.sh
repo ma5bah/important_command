@@ -87,9 +87,9 @@ unset -f _bind 2>/dev/null
 #  4. Backspace ^H/^? — stty erase fix         
 #  5. macOS Option — needs "Meta" in term app   
 #  6. Vi mode / framework overrides            
-# 7. WORDCHARS clobbering (zsh)
-# 8. ZLE smkx/rmkx hooks (zsh)
-# 9. Delete key variants
+#  7. WORDCHARS clobbering (zsh)
+#  8. ZLE smkx/rmkx hooks (zsh)
+#  9. Delete key variants
 # 10. Double-escape arrow seqs
 # 11. Escape delay (KEYTIMEOUT)
 # 12. Paste bracket mode (zsh)
