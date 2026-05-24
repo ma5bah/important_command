@@ -33,6 +33,16 @@
         "--command-timeout-secs",
         "60"
       ]
+    },
+    "generic_non_proxied_browser": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest",
+        "--browser=chrome",
+        "--user-data-dir=/Users/ma5bah/Library/Application Support/Google/Chrome/Profile 1"
+      ]
     }
   },
   "plugin": [],
@@ -54,42 +64,30 @@
       "model": "opencode-go/minimax-m2.7",
       "prompt": "{file:~/project/brain/documentation/prompt/make_note.short.md}"
     },
-    "actor_one": {
+    "actor_nemotron_free": {
       "description": "Actor for executing well-defined mechanical generation tasks.",
       "mode": "subagent",
-      "model": "opencode/minimax-m2.5-free",
+      "model": "opencode/nemotron-3-super-free",
+      "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
+    },    
+    "actor_deepseek_flash_free": {
+      "description": "Actor for executing well-defined mechanical generation tasks.",
+      "mode": "subagent",
+      "model": "opencode/deepseek-v4-flash-free",
       "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
     },
-    "actor_two": {
+    "actor_deepseek_flash_paid": {
       "description": "Actor for executing well-defined mechanical generation tasks.",
       "mode": "subagent",
       "model": "opencode-go/deepseek-v4-flash",
       "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
     },
-    "actor_three": {
-      "description": "Actor for executing well-defined mechanical generation tasks.",
-      "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
-      "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
-    },
-    "actor_four": {
-      "description": "Actor for executing well-defined mechanical generation tasks.",
-      "mode": "subagent",
-      "model": "opencode-go/deepseek-v4-pro",
-      "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
-    },
-    "actor_five": {
-      "description": "Actor for executing well-defined mechanical generation tasks.",
-      "mode": "subagent",
-      "model": "opencode-go/minimax-m2.7",
-      "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
-    },
-    "actor_six": {
-      "description": "Actor for executing well-defined mechanical generation tasks.",
-      "mode": "subagent",
-      "model": "opencode-go/qwen3.6-plus",
-      "prompt": "{file:~/project/brain/documentation/prompt/executor-prompt.md}"
-    }
+    "quality_checker_paid": {
+     "description": "Quality Checker — validating the quality of outputs against users input and intent, with a focus on bug bounty and pentesting content.",
+     "mode": "subagent",
+     "model": "opencode-go/minimax-m2.7",
+     "prompt": "{file:~/project/brain/documentation/prompt/quality_checker.md}"
+   }
   },
   "watcher": {
     "ignore": [
@@ -123,7 +121,7 @@
     "edit": {
       "*": "allow",
       "/tmp/**": "allow",
-      "brain/**": "deny",
+      "brain/**": "ask",
       ".git/**": "deny",
       "*.db": "ask",
       "*.sqlite": "ask",
