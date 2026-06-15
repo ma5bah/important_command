@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # OS Detection (remains the same)
 if echo "$(uname -a)" | grep "Android"; then
         detected_os="android"
@@ -129,7 +131,7 @@ while [[ "$#" -gt 0 ]]; do
                 exit 0 # Changed to exit 0 for help
                 ;;
         *)
-                if [[ $1 == *"youtube.com"* || $1 == *"youtu.be"* || $1 == *"youtube.com"* || $1 == *"youtu.be"* ]]; then # Made URL check more general
+                if [[ $1 == *"youtube.com"* || $1 == *"youtu.be"* ]]; then
                         youtube_url=$1
                         # Do not break here if other parameters might follow the URL
                 else
@@ -141,6 +143,16 @@ while [[ "$#" -gt 0 ]]; do
         esac
         shift
 done
+
+clean_youtube_url() {
+    local url="$1"
+    url="$(echo "$url" | xargs)"
+    url=$(echo "$url" | sed -E 's/[?&](feature|si|pp|ei|usg|ved|source|sns|sp|ab_channel|utm_[^=]+)=[^&]*//g')
+    url=$(echo "$url" | sed -E 's/&{2,}/&/g; s/\?&/?/g; s/&$//')
+    echo "$url"
+}
+
+youtube_url=$(clean_youtube_url "$youtube_url")
 
 # Default and Validation logic (remains largely the same, minor adjustments)
 if [[ -z "$youtube_url" ]]; then # Check if youtube_url is empty
@@ -207,7 +219,8 @@ echo "Starting download process..."
 # Execute the python script
 # Ensure the python3 in the venv is used if 'python3' might point elsewhere
 # Using 'python' is often safer within an activated venv as it refers to venv's python
-python download_youtube.py \
+
+python "$SCRIPT_DIR/download_youtube.py" \
         --download_path "$download_path" \
         --output_format "$output_format" \
         --is_id_needed "$is_id_needed" \

@@ -4,6 +4,7 @@
 	// List of extensions which should be recommended for users of this workspace.
 	"recommendations": [
 		"github.copilot-chat",
+		"gruntfuggly.todo-tree",
 		"anthropic.claude-code",
 		"google.geminicodeassist",
 		"kilocode.kilo-code",
@@ -13,6 +14,10 @@
 		"continue.continue",
 		"mermaidchart.vscode-mermaid-chart",
 		"prisma.prisma",
+		"bradlc.vscode-tailwindcss",
+		"james-yu.latex-workshop",
+		"redhat.vscode-xml",
+		"eamodio.gitlens",
 		"ms-vscode.vscode-typescript-next",
 		"ms-vscode-remote.remote-ssh",
 		"bradlc.vscode-tailwindcss",
